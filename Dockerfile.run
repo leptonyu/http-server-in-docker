@@ -1,0 +1,8 @@
+FROM busybox:musl
+
+EXPOSE 3000
+
+COPY http /usr/sbin/goweb
+
+CMD goweb
+
