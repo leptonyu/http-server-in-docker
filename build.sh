@@ -53,7 +53,8 @@ ARG PACK=true
 COPY upx /bin/upx
 COPY make.sh make.sh
 
-RUN /bin/sh make.sh \
+RUN chmod +x make.sh \
+ && ./make.sh \
  && eval [ -f main ] \
  && if [ "\$PACK" = "true" ]; then \
          chmod +x /bin/upx \
