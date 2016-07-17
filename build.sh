@@ -31,6 +31,17 @@ NAME=`basename "$ROOT"`
 LABEL=icymint/$NAME
 TEMP_LABEL=$LABEL-builder
 FILE="$ROOT/Dockerfile"
+PACK=true
+
+
+if [ "true" = "$PACK" -a ! -f "upx" ]; then
+  echo "Downloading upx..."
+  curl -sL "https://github.com/leptonyu/http-server-in-docker/raw/master/upx" -o upx
+  if [ ! -f upx ]; then
+    echo "upx not found !"
+    exit 1
+  fi
+fi
 
 echo "FROM $FROM"    > "$FILE"
 cat "$ROOT/make.sh" | grep '^#' | grep -o '\(ARG\|ENV\|VOLUME\|EXPOSE\|ADD\|COPY\|MAINTAINER\|USER\|ONBUILD\) ..*' >> "$FILE"
@@ -59,8 +70,7 @@ cat "$FILE"
 
 TID=`docker images -q $TEMP_LABEL`
 if [ -n "$TID" ]; then
-  echo "$TID exists!"
-  exit 1
+  docker rmi -f $TEMP_LABEL
 fi
 
 ID=`docker images -q $LABEL`
@@ -70,7 +80,7 @@ fi
 
 GO=`docker images -q $FROM`
 
-docker build --rm --no-cache -t $TEMP_LABEL . \
+docker build --rm --no-cache -t $TEMP_LABEL --build-arg PACK=$PACK . \
 && docker run --rm $TEMP_LABEL | docker build --rm --no-cache -t $LABEL - \
 && docker rmi $TEMP_LABEL
 
