@@ -3,4 +3,5 @@
 DIR=$PWD
 PORT=${1:-3000}
 echo "Access: http://localhost:$PORT"
+echo "Dir   : $DIR"
 docker run --rm -v "$DIR":/docker -p $PORT:3000 --name http icymint/http
