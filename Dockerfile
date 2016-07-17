@@ -15,7 +15,7 @@ RUN echo "package main"       > main.go \
  && echo "  http.ListenAndServe(\":$PORT\", nil)"  >> main.go \
  && echo "}"  >> main.go \
  && go fmt main.go \
- && CGO_ENABLED=0 go build -a -ldflags '-s' main.go \
+ && CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -a -ldflags '-s' main.go \
  && if [ "$PACK" = "true" ]; then \
          chmod +x /bin/upx \
       && upx --lzma --best main \
