@@ -1,8 +1,0 @@
-FROM scratch
-
-EXPOSE 3000
-
-COPY main  /usr/bin/main
-
-ENTRYPOINT ["/usr/bin/main"]
-
