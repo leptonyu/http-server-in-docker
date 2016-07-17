@@ -1,8 +1,8 @@
-FROM busybox:musl
+FROM scratch
 
 EXPOSE 3000
 
-COPY main  /bin/goweb
+COPY main  /usr/bin/main
 
-CMD goweb
+ENTRYPOINT ["/usr/bin/main"]
 
