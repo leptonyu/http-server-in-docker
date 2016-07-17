@@ -16,28 +16,66 @@ ROOT=`cd "$ROOT";pwd`
 
 cd "$ROOT"
 
-LABEL=icymint/http
-TEMP_LABEL=icymint-http-builder
+if [ ! -f "$ROOT/make.sh" ]; then
+  echo "make.sh not found!"
+  exit 1
+fi
+
+FROM=`head -1 "$ROOT/make.sh" | grep -o 'FROM [0-9a-z][-0-9a-z]*\(:[0-9a-z][-.0-9a-z]*\)\?' | awk '{print $2}'`
+if [ -z "$FROM" ]; then
+  echo "FROM not set in first line of make.sh"
+  exit 1
+fi
+
+NAME=`basename "$ROOT"`
+LABEL=icymint/$NAME
+TEMP_LABEL=$LABEL-builder
+FILE="$ROOT/Dockerfile"
+
+echo "FROM $FROM"    > "$FILE"
+cat "$ROOT/make.sh" | grep '^#' | grep -o '\(ARG\|ENV\|VOLUME\|EXPOSE\|ADD\|COPY\|MAINTAINER\|USER\|ONBUILD\) ..*' >> "$FILE"
+cat >> "$FILE" <<-EOF
+### FROM in make.sh
+
+ARG PACK=true
+
+COPY upx /bin/upx
+COPY make.sh make.sh
+
+RUN /bin/sh make.sh \
+ && eval [ -f main ] \
+ && if [ "\$PACK" = "true" ]; then \
+         chmod +x /bin/upx \
+      && upx --lzma --best main \
+  ; fi \
+ && echo "FROM scratch"            > Dockerfile \
+ && echo "COPY main  /main"       >> Dockerfile \
+ && echo "ENTRYPOINT [\"/main\"]" >> Dockerfile
+
+CMD tar -cf - main Dockerfile
+EOF
+
+cat "$FILE"
 
 TID=`docker images -q $TEMP_LABEL`
-
 if [ -n "$TID" ]; then
   echo "$TID exists!"
   exit 1
 fi
 
 ID=`docker images -q $LABEL`
-
 if [ -n "$ID" ]; then
   docker rmi -f "$ID"
 fi
 
-GO=`docker images -q golang:alpine`
+GO=`docker images -q $FROM`
 
 docker build --rm --no-cache -t $TEMP_LABEL . \
 && docker run --rm $TEMP_LABEL | docker build --rm --no-cache -t $LABEL - \
 && docker rmi $TEMP_LABEL
 
+rm -f "$FILE"
+
 if [ -z "$GO" ]; then
-  docker rmi -f golang:alpine
+  docker rmi -f $FROM
 fi
