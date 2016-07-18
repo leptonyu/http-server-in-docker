@@ -44,7 +44,7 @@ if [ "true" = "$PACK" -a ! -f "upx" ]; then
 fi
 
 echo "FROM $FROM"    > "$FILE"
-cat "$ROOT/make.sh" | grep '^#' | grep -o '\(ARG\|ENV\|VOLUME\|EXPOSE\|ADD\|COPY\|MAINTAINER\|USER\|ONBUILD\) ..*' >> "$FILE"
+cat "$ROOT/make.sh" | grep '^#' | grep -o '\(ARG\|ENV\|VOLUME\|EXPOSE\|ADD\|COPY\|MAINTAINER\|USER\|ONBUILD\|WORKDIR\) ..*' >> "$FILE"
 cat >> "$FILE" <<-EOF
 ### FROM in make.sh
 
@@ -82,8 +82,12 @@ fi
 GO=`docker images -q $FROM`
 
 docker build --rm --no-cache -t $TEMP_LABEL --build-arg PACK=$PACK . \
-&& docker run --rm $TEMP_LABEL | docker build --rm --no-cache -t $LABEL - \
-&& docker rmi $TEMP_LABEL
+&& docker run --rm $TEMP_LABEL | docker build --rm --no-cache -t $LABEL -
+
+TID=`docker images -q $TEMP_LABEL`
+if [ -n "$TID" ]; then
+  docker rmi -f $TEMP_LABEL
+fi
 
 rm -f "$FILE"
 
